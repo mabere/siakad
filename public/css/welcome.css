@@ -1,0 +1,212 @@
+/* Optimized home.css */
+:root {
+    --primary-color: red;
+    --primary-color: #1F2A44;
+    --secondary-color: #374151;
+    --light-color: #F9FAFB;
+    --light-bg: #ECEFF1;
+    --bg-color: #1F2A44;
+    --accent-color: #D4A017;
+    --contrast-text: #212529;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--light-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+.container {
+    flex: 1;
+}
+
+.logo-img {
+    height: 40px;
+    width: auto;
+}
+
+.navbar {
+    padding: 0.75rem 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    background-color: var(--light-bg);
+}
+
+.navbar.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.nav-link {
+    color: var(--secondary-color);
+}
+
+.nav-link:hover {
+    color: var(--primary-color);
+}
+
+/* Light Theme */
+.hero-light {
+    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.7)),
+        url('https://kabaranoa.id/wp-content/uploads/2024/04/konut3.jpg') no-repeat center center / cover;
+}
+
+.hero-light .hero-content {
+    background: linear-gradient(135deg, #ffffff, #f0f2f5);
+    color: var(--dark-color);
+}
+
+.hero-light .hero-content h1::after {
+    background: var(--primary-color);
+}
+
+/* Dark Theme */
+.hero-dark {
+    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.7)),
+        url('https://kabaranoa.id/wp-content/uploads/2024/04/konut3.jpg') no-repeat center center / cover;
+}
+
+.hero-dark .hero-content {
+    background: linear-gradient(135deg, var(--bg-color), #172135);
+    color: var(--light-color);
+}
+
+.hero-dark .hero-content h1::after {
+    background: var(--accent-color);
+}
+
+/* Common Styles */
+.hero-section {
+    min-height: 70vh;
+    padding: 2rem 0;
+    transition: background 0.3s ease;
+}
+
+.hero-content {
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.hero-content h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    margin-bottom: 1rem;
+}
+
+.hero-content h1::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 2px;
+    margin: 10px 0;
+    transition: background 0.3s ease;
+}
+
+.hero-content .btn {
+    background-color: var(--primary-color);
+    color: var(--light-color);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.btn.btn-light:hover,
+.hero-content .btn:hover {
+    background-color: #1565C0;
+}
+
+.carousel-item .card {
+    width: 100%;
+    max-width: 18rem;
+    margin: 0 auto;
+    background-color: var(--light-color);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.carousel-item.active .card {
+    border: 2px solid var(--accent-color);
+    transform: scale(1.05);
+}
+
+footer {
+    background-color: var(--primary-color) !important;
+    color: var(--light-color);
+}
+
+footer a:hover {
+    color: var(--accent-color);
+}
+
+/* Theme Toggle */
+#theme-toggle {
+    padding: 0.25rem 0.75rem;
+    font-size: 1rem;
+}
+
+.navbar-dark #theme-toggle {
+    color: var(--light-color);
+}
+
+.navbar-light #theme-toggle {
+    color: var(--secondary-color);
+}
+
+/* Login Card */
+.login-card {
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Modal */
+.modal-content {
+    background-color: var(--light-bg);
+    color: var(--secondary-color);
+}
+
+.modal-content.bg-dark {
+    background-color: var(--primary-color);
+    color: var(--light-color);
+}
+
+/* Responsive Design */
+@media (max-width: 767.98px) {
+    .hero-section {
+        min-height: auto;
+        padding: 1rem 0;
+    }
+
+    .hero-content {
+        padding: 1rem;
+    }
+
+    .navbar-nav,
+    footer .row {
+        text-align: center;
+    }
+
+    .navbar-nav .nav-item {
+        margin: 0.5rem 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+
+    .carousel-control-prev,
+    .carousel-control-next {
+        display: none;
+    }
+
+    .carousel-item .card {
+        max-width: 100%;
+    }
+}

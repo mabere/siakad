@@ -1,0 +1,1 @@
+<img src="https://lb.test/public/storage/images/mhs/1728271165.png" alt="" width="100" height="auto">

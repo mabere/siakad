@@ -1,0 +1,247 @@
+Halo grok.
+Saya butuh bantuan pengembangan aplikasi siakad dengan informasi sebagai berikut. Analisis untuk menerapkan fitur yang
+dimaksud berdasarkan informasi berikut:
+Route SKRIPSI untuk role mahasiswa
+Route::get('mhs/ujian', [ThesisExamController::class, 'index'])->name('student.thesis.exam.index'); menampilkan
+indormasi pendaftaran dan link ke formRegister
+Route::get('mhs/{thesis}/daftar-ujian', [ThesisExamController::class,
+'formRegister'])->name('student.thesis.exam.form'); menampilkan form pendaftaran ujian
+Route::post('mhs/{thesis}/daftar-ujian', [ThesisExamController::class,
+'registerExam'])->name('student.thesis.exam.register'); menyimpan form pendaftaran
+Route::get('mhs/skripsi/{thesis}', [ThesisController::class, 'show'])->name('student.thesis.show'); menampilkan detail
+skrispi (judul, pembimbing, dan status)
+Route::get('mhs/skripsi/{thesis}/revisi-ujian', [ThesisExamController::class,
+'formRevision'])->name('student.thesis.exam.revision.form'); form revisi pendaftaran (bila status revisi)
+Route::post('mhs/skripsi/{thesis}/revisi-ujian', [ThesisExamController::class,
+'submitRevision'])->name('student.thesis.exam.revision.submit'); menyimpan revisi pendaftaran
+
+Saat ini status ujian sudah diubah menjadi 'selesai'. Bagaimana cara agar mahasiswa bisa mengakses informasi lengkap
+terkait ujian skripsi yang memuat: status pendaftaran, pembimbing, penguji, jadwal ujian, status ujian, dan dokumen
+ujian?
+
+di hamalan index memuat ininformasi pendaftaran beserta tombol link menuju halaman pendaftaran. Saya ingin jika tombol
+link pendaftaran dengan status apa pun, mahasiswa bisa mengakses halaman form pendaftaran serta menyimpan tombol link
+menuju detail pendaftaran (misalnya menggunakan metode show).
+
+informasi schema migrasi table:
+schema tabel:
+1. Schema::create('theses', function (Blueprint $table) {
+$table->id();
+$table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
+$table->string('title')->nullable();
+$table->enum('status', ['active', 'completed', 'terminated'])->default('active');
+$table->enum('current_phase',['bimbingan_1','bimbingan_2','pemberkasan','verifikasi_admin','penetapan_penguji','penjadwalan','pelaksanaan','ujian_selesai'])->default('bimbingan_1');
+$table->timestamp('start_date')->nullable();
+$table->timestamp('end_date')->nullable();
+$table->timestamps();
+$table->softDeletes();
+});
+2. Schema::create('thesis_exams', function (Blueprint $table) {
+$table->id();
+$table->foreignId('thesis_id')->constrained()->cascadeOnDelete();
+$table->foreignId('chairman_id')->nullable()->constrained('lecturers')->cascadeOnDelete(); // ketua panitia
+$table->foreignId('secretary_id')->nullable()->constrained('lecturers')->cascadeOnDelete(); // sekretaris panitia
+$table->dateTime('scheduled_at')->nullable();
+$table->string('location')->nullable();
+$table->enum('status',
+['diajukan','revisi','terverifikasi','penguji_ditetapkan','disetujui_dekan','dijadwalkan','pelaksanaan',
+'selesai'])->default('diajukan');
+$table->float('final_score')->nullable();
+$table->text('notes')->nullable();
+$table->timestamps();
+});
+
+3. Schema::create('thesis_exam_examiners', function (Blueprint $table) {
+$table->id();
+$table->foreignId('thesis_exam_id')->constrained()->cascadeOnDelete();
+$table->foreignId('lecturer_id')->constrained('lecturers')->cascadeOnDelete();
+$table->float('score')->nullable();
+$table->text('comment')->nullable();
+$table->timestamps();
+});
+
+4. Schema::create('thesis_exam_status_logs', function (Blueprint $table) {
+$table->id();
+$table->foreignId('thesis_exam_id')->constrained()->onDelete('cascade');
+$table->string('old_status')->nullable();
+$table->string('new_status');
+$table->text('notes')->nullable(); // alasan perubahan
+$table->foreignId('changed_by')->nullable()->constrained('users')->onDelete('set null');
+$table->timestamp('changed_at')->useCurrent();
+$table->timestamps();
+});
+
+5. Schema::create('thesis_documents', function (Blueprint $table) {
+$table->id();
+$table->foreignId('thesis_id')->constrained()->cascadeOnDelete();
+$table->string('document_type'); // draft, lembar acc, bebas pustaka, dll
+$table->string('file_path');
+$table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+$table->text('notes')->nullable();
+$table->timestamps();
+});
+
+berikut informasi metode index:
+public function index()
+{
+$student = auth()->user()->student;
+$thesis = Thesis::with(['exam', 'documents'])
+->where('student_id', $student->id)
+->latest()
+->first();
+if (!$thesis) {
+return redirect()->back()->with('error', 'Data skripsi belum ditemukan.');
+}
+return view('backend.skripsi.mhs.exam-index', compact('thesis'));
+}
+
+relasi di model:
+model
+1. Thesis
+public function documents(){return $this->hasMany(ThesisDocument::class);}
+public function exam(){eturn $this->hasOne(ThesisExam::class);}
+public function student(){return $this->belongsTo(Student::class);}
+public function supervisions(){return $this->hasMany(ThesisSupervision::class);}
+public function meetings(){return $this->hasMany(SupervisionMeeting::class);}
+public function milestones(){return $this->hasMany(ThesisMilestone::class);}
+public function allDocumentsApproved(): bool{return $this->documents()->where('status', '!=', 'approved')->count() ===
+0;}
+public function examiners(): HasMany{return $this->hasMany(ThesisExamExaminer::class);}
+2. ThesisExam
+const STATUS_TERVERIFIKASI = 'terverifikasi';
+const STATUS_REVISI = 'revisi';
+const STATUS_DITOLAK = 'rejected';
+const STATUS_PENGUJI_DITETAPKAN = 'penguji_ditetapkan';
+const STATUS_DISETUJUI_DEKAN = 'disetujui_dekan';
+const PHASE_DISETUJUI_DEKAN = 'disetujui_dekan';
+public function thesis(): BelongsTo{return $this->belongsTo(Thesis::class);}
+public function examiners(): HasMany{return $this->hasMany(ThesisExamExaminer::class);}
+public function chairman(){return $this->belongsTo(Lecturer::class, 'chairman_id');}
+public function secretary(){return $this->belongsTo(Lecturer::class, 'secretary_id');}
+3. ThesisExamExaminer
+public function lecturer(){return $this->belongsTo(Lecturer::class);}
+4. ThesisExamStatusLog
+public function thesisExam(){return $this->belongsTo(ThesisExam::class);}
+public function user(){return $this->belongsTo(User::class, 'changed_by');}
+5. Student
+public function thesisSupervision(): HasOne{return $this->hasOne(ThesisSupervision::class);}
+public function user(): BelongsTo{return $this->belongsTo(User::class);}
+public function thesis(){return $this->hasOne(Thesis::class);}
+6. Lecturer
+public function user(): BelongsTo
+{return $this->belongsTo(User::class);}
+7. ThesisSupervision
+public function student(){return $this->belongsTo(Student::class);}
+public function supervisor(){return $this->belongsTo(Lecturer::class, 'supervisor_id');}
+public function thesis(){return $this->belongsTo(Thesis::class);}
+// Accessor methods for primary and secondary supervisors
+public function getPrimarySupervisorAttribute(){if ($this->supervisor_role === 'pembimbing_1') {return
+$this->supervisor;}return ThesisSupervision::where('thesis_id', $this->thesis_id)->where('supervisor_role',
+'pembimbing_1')->first()?->supervisor;}
+public function getSecondarySupervisorAttribute(){if ($this->supervisor_role === 'pembimbing_2') {return
+$this->supervisor;}
+return ThesisSupervision::where('thesis_id', $this->thesis_id)->where('supervisor_role',
+'pembimbing_2')->first()?->supervisor;}
+8. User
+public function lecturer(): HasOne{return $this->hasOne(Lecturer::class);} public function dekan(): HasOne{return
+$this->hasOne(Lecturer::class);}
+public function student(): HasOne{return $this->hasOne(Student::class);} public function roles(): BelongsToMany{return
+$this->belongsToMany(Role::class, 'role_user');}
+public function hasRole($role): bool{return $this->roles()->where('name', $role)->exists();}
+public function hasAnyRole($roles){return $this->roles()->whereIn('name', (array) $roles)->exists();}
+// Get all active roles
+public function getActiveRoles(){return $this->assignments()->where('active', true)->get()->pluck('role')->unique();}
+public function getRoleNames(){return $this->roles->pluck('name'); // mengambil nama semua role}
+public function activeRole(): ?string{return $this->active_role ?? $this->getRoleNames()->first();}
+public function formRegister(Thesis $thesis){$this->authorize('registerExam', $thesis);
+// Blokir jika sudah mendaftar (dan bukan status revisi/ditolak)
+if ($thesis->exam && !in_array($thesis->exam->status, ['revisi', 'ditolak', 'selesai'])) {return redirect()->route('student.thesis.exam.index', $thesis->id)->with('error', 'Pengajukan pendaftaran ujian hanya dibolehkan satu kali. Silakan periksa statusnya.');}return view('backend.skripsi.mhs.exam-form', compact('thesis'));}
+
+policy:
+public function registerExam(User $user, Thesis $thesis): bool{return $user->id === $thesis->student->user_id && in_array($thesis->current_phase, ['bimbingan_2', 'pemberkasan']);}
+
+view index:
+<x-main-layout>
+    @section('title', 'Informasi Ujian Skripsi')
+    <div class="content-page wide-md m-auto">
+        <div class="nk-block-head nk-block-head-sm bg-info px-4">
+            <div class="nk-block-head-content text-center">
+                <h3 class="nk-block-title p-2 text-white">Informasi Pendaftaran Ujian Skripsi</h3>
+                <div class="nk-block-des">
+                    isi deskripsi
+                </div>
+            </div>
+        </div>
+
+        <div class="nk-block">
+            @if (session('success'))
+            <div class="alert alert-icon alert-success" role="alert">
+                <em class="icon ni ni-check-circle"></em>
+                <strong>{{ session('success') }}</strong>
+            </div>
+            @endif
+            <div class="card card-bordered">
+                <div class="card-inner card-inner-lg">
+                    <div id="accordion-skripsi" class="accordion accordion-s2">
+                        <div class="accordion-item">
+                            <a href="#" class="accordion-head" data-bs-toggle="collapse"
+                                data-bs-target="#skripsi-item-1">
+                                <h6 class="title">1. Informasi Umum</h6>
+                                <span class="accordion-icon"></span>
+                            </a>
+                            <div class="accordion-body collapse show" id="skripsi-item-1"
+                                data-bs-parent="#accordion-skripsi">
+                                <div class="accordion-inner">
+                                    isi paragraf
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <a href="#" class="accordion-head collapsed" data-bs-toggle="collapse"
+                                data-bs-target="#skripsi-item-2">
+                                <h6 class="title">2. Persyaratan Pendaftaran</h6>
+                                <span class="accordion-icon"></span>
+                            </a>
+                            <div class="accordion-body collapse" id="skripsi-item-2"
+                                data-bs-parent="#accordion-skripsi">
+                                <div class="accordion-inner">
+                                    isi paragraf
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <a href="#" class="accordion-head collapsed" data-bs-toggle="collapse"
+                                data-bs-target="#skripsi-item-3">
+                                <h6 class="title">3. Ketentuan Pendaftaran dan Prosedur</h6>
+                                <span class="accordion-icon"></span>
+                            </a>
+                            <div class="accordion-body collapse" id="skripsi-item-3"
+                                data-bs-parent="#accordion-skripsi">
+                                <div class="accordion-inner">
+                                    isi paragraf
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <hr class="mt-5 mb-4">
+                    <div class="entry text-center">
+                        <div class="mt-6 text-center">
+                            <p class="lead">PENDAFTARAN UJIAN</p>
+                            @if($thesis->exam)
+                            <a href="{{ route('student.thesis.exam.show', $thesis->id) }}" class="btn btn-info">Lihat
+                                Detail Pendaftaran</a>
+                            @else
+                            <a href="{{ route('student.thesis.exam.form', $thesis->id) }}" class="btn btn-primary">
+                                DAFTAR
+                            </a>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</x-main-layout>

@@ -1,0 +1,79 @@
+<style>
+    .btn-gradient-primary-to-secondary {
+        background: linear-gradient(135deg, #089442 70%, #798d17 100%);
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-gradient-primary-to-secondary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(63, 128, 255, 0.4);
+    }
+
+    .bg-gradient-primary-to-secondary {
+        background: linear-gradient(135deg, #3f80ff 0%, #7c4dff 100%);
+    }
+
+    .bg-gradient-success-to-teal {
+        background: linear-gradient(135deg, #00c853 0%, #00bcd4 100%);
+    }
+
+    .bg-gradient-warning-to-danger {
+        background: linear-gradient(135deg, #ff9100 0%, #ff1744 100%);
+    }
+
+    .bg-gradient-primary-to-info {
+        background: linear-gradient(135deg, #3f80ff 0%, #00bcd4 100%);
+    }
+
+    .transition-scale tr {
+        transition: transform 0.2s ease;
+    }
+
+    .transition-scale tr:hover {
+        transform: scale(1.02);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .bg-light-primary {
+        background-color: rgba(63, 128, 255, 0.1);
+    }
+
+    .bg-success-gradient {
+        background: linear-gradient(45deg, #00c853, #64dd17);
+    }
+
+    .bg-danger-gradient {
+        background: linear-gradient(45deg, #ff1744, #f50057);
+    }
+
+    /* Custom Scrollbar */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px;
+        background: #f1f1f1;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #3f80ff;
+        border-radius: 4px;
+    }
+
+    /* Loading State */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 999;
+        display: none;
+    }
+
+    .loading-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+</style>
